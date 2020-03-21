@@ -168,6 +168,9 @@ module LogStash module Inputs class Jdbc < LogStash::Inputs::Base
   # Use an incremental column value rather than a timestamp
   config :use_column_value, :validate => :boolean, :default => false
 
+  # If tracking column value rather than timestamp, the column whose value is to be tracked
+  config :tracking_column, :validate => :string
+
   # Type of tracking column. "numeric", "timestamp" or "cycle"
   config :tracking_column_type, :validate => ['numeric', 'timestamp', 'cycle'], :default => 'numeric'
 
