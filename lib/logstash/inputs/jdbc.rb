@@ -159,14 +159,22 @@ module LogStash module Inputs class Jdbc < LogStash::Inputs::Base
   # exactly once.
   config :schedule, :validate => :string
 
+  # When scheduler is enabled, disallow overlapping of jobs if previous execution is not yet finished
+  config :schedule_allow_overlap, :validate => :boolean, :default => true
+
   # Path to file with last run time
   config :last_run_metadata_path, :validate => :string, :default => "#{ENV['HOME']}/.logstash_jdbc_last_run"
 
   # Use an incremental column value rather than a timestamp
   config :use_column_value, :validate => :boolean, :default => false
 
-  # If tracking column value rather than timestamp, the column whose value is to be tracked
-  config :tracking_column, :validate => :string
+  # Type of tracking column. "numeric", "timestamp" or "cycle"
+  config :tracking_column_type, :validate => ['numeric', 'timestamp', 'cycle'], :default => 'numeric'
+
+  # Cyclic tracking
+  config :cycle_from, :validate => :number, :default => 0
+  config :cycle_to, :validate => :number, :default => 0
+  config :cycle_step, :validate => :number, :default => 0
 
   # Type of tracking column. Currently only "numeric" and "timestamp"
   config :tracking_column_type, :validate => ['numeric', 'timestamp'], :default => 'numeric'
@@ -272,7 +280,7 @@ module LogStash module Inputs class Jdbc < LogStash::Inputs::Base
   def run(queue)
     load_driver
     if @schedule
-      @scheduler = Rufus::Scheduler.new(:max_work_threads => 1)
+      @scheduler = Rufus::Scheduler.new(:max_work_threads => 1, :overlap => @schedule_allow_overlap)
       @scheduler.cron @schedule do
         execute_query(queue)
       end
